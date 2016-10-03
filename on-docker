@@ -1,0 +1,26 @@
+在不同系统主机上安装docker
+
+在linux上安装:ubuntu redHat
+1.检查linux系统内核版本
+2.检查是否安装device mapper 来作为docker存储驱动
+3.获取docker安装包,命令安装docker
+4.对于开启UFW 的ubuntu系统,要启用数据包转发功能
+
+
+在osx系统和windows系统中安装docker
+使用Boot2Docker工具快速上手docker,安装Boot2Docker,也依赖于两个必要条件:
+VirtualBox
+Docker客户端
+
+
+使用远程安安装在相应的宿主机上安装Docker,使用二进制安装Docker.
+
+	
+	Docker守护进程
+
+
+
+
+
+
+ 
