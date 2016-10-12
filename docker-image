@@ -1,0 +1,23 @@
+探讨Docker镜像:用来启动容器的构建基石:
+	1.什么是镜像
+	2.如何对镜像进行管理
+	3.如何修改镜像
+	4.如何创建,存储和共享自己创建的镜像
+	5.存储镜像的仓库和用来存储仓库的Resgistry
+
+Docker镜像是由文件系统叠加而成.最底端是一个引导文件,即bootfs,这很象典型的Linux/Unix的引导文件系统.Docker用户几乎永远不会和引导文件系统有什么交互.实际上,当一个容器启动后,它将会被移动到内存中,而引导文件系统则会被卸载(unmount),以留出更多的内存供initred磁盘镜像使用.
+
+Docker镜像的第二层是root文件系统rootfs,它位于引导文件系统之上,rootfs可以是一种或多种操作系统(如Debian或者Ubantu文件系统) Docker里,root文件系统永远只能是只读状态,并且Docke利用联合加载(union mount)技术又会在root文件系统层上加载更过的只读文件系统	联合加载会将 各层文件爱呢系统叠加到一起,这样最终的文件系统会包含所有底层的文件和目录.
+
+Docker将这样的文件系统统称为镜像.一个镜像可以放到另一个镜像的顶部,位于下面的镜像称为父镜像(parent image) ,最底部的镜像称为基础镜像(base image) 当从一个镜像启动容器时,Docker会在该镜像的最顶层加载一个读写文件系统.我们想在Docker中运行的程序就是在这个读写层中执行的.
+
+
+	列出Docker 主机上的镜像 :sudo docker iamges 
+	
+	注意:本地镜像都保存在Docker宿主机的/var/lib/docker目录下.镜像从仓库中下载下来.镜像保存在仓库中.而仓库存在于Registry中.如果要查询具体的镜像,使用 sudo docker images ubuntu(镜像名称)
+	
+	从ubuntu仓库中拉取Ubuntu镜像 :sudo docker pull ubuntu
+	注意:我们虽然称其为Ubuntu操作系统,但实际上它并不是一个完整的操作系统.它只是一个裁剪办.只包含最低限度的支持系统运行的组件.获取指定版本的镜像使用 sudo docker  pull fedora:latest (:版本标签)
+
+
+	
