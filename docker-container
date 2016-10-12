@@ -1,0 +1,63 @@
+		Docker 入门 
+
+第一步:查看docker程序是否正常工作
+	命令:docker info
+该命令会返回所有容器和镜像(镜像即是Docker用来构建容器的"构建块")的数量,Docker使用的执行驱动和存储驱动(execution and storage driver),以及Docker的基本配置;
+
+
+第二步:创建第一个容器
+	命令:docker run -i -t ubuntu /bin/bash
+首先,告诉Docker执行docker run 命令 ,并指定了-i和-t两个命令行参数. -i标志保证容器中的STDIN是开启的 -t 它告诉Docker要为创建的容器分配一个伪tty终端； 接下来,告诉Docker基于什么镜像来创建容器,实例中使用ubuntu镜像 接下来本例中我们在容器运行/bin/bash命令启动一个Bash shell.
+
+第三步:使用第一个容器
+	1.检查容器的主机名   	hostname
+	2.检查容器的    	cat  /etc/hosts文件
+	3.检查容器的接口  	ip a
+	4.检查容器的进程	ps -aux
+	5.在容器中安装软件包    apt-get update && apt-get install vim
+
+退出容器 : exit; 回到宿机的命令提示符
+
+
+查看当前系统中容器的列表
+	docker ps -a :默认情况下,执行docker ps 命令时,只能看到正在运行的容器,-a标志 列出所有的容器
+	docker ps -l  指定标志为-l 列出最后一次运行的容器,包括正在运行和已经停止的.
+
+
+	
+
+
+容器命名
+	Docker会我们创建的每一个容器自动生成 一个随机的名称,如果想要指定容器名称,可以使用--name标志来实现
+	给容器命令:docker run --name bob_the_container -i -t ubuntu /bin/bash
+	一个合法的容器名称包含以下字段:小写字母a-z,大写字母 A-Z 数字 0-9 下划线 圆点 横线 [a-zA-Z0-9_.-]
+
+
+	启动已经停止运行的容器
+		docker start bob_the_container  除了容器名称,也可以使用容器ID
+		
+		docker start aa3f365f0f4e       通过ID容器已经停止运行的容器
+
+
+
+	重新附着容器上
+		Docker容器重新启动的时候,会沿用docker run 命令时指定的参数来运行,我可以使用docker attach命令
+	重新附着到该容器的 会话上.
+		docker attach  bob_the_container     通过名称附着到容器的会话
+		docker attach  aa3f365f0f4e          通过ID附着到容器
+
+
+创建守护式容器(长期运行的容器)
+	
+	docker run --name daemon_dave -d ubuntu /bin/sh -c "while true;do echo hello world;sleep 1;done"
+	上面我们使用docker run 命令使用-d参数,因此Docker会将容器放到后台运行.还在容器运行的命令行中使用了一个while循环,该循环会一直打印hello world ,直到容器或其进程停止运行.该容器执行时直接返回一个容器ID,主机的控制台不会附着到shell会话上.
+
+
+	获取守护式容器的日志:
+		docker logs daemon_dave  :Docker会输出最后几条日志项并返回
+		docker logs -f daemon_dave	:命令后使用-f参数来监控Docker日志  Ctrl+C退出日志跟踪
+		docker logs -ft  daemon_dave    :命令后使用-t参数会为每条日志添加时间戳
+	
+	查看守护式容器的进程:
+		docker top  daemon_dave      	:该命令执行后可以看到容器内的所有进程
+	 
