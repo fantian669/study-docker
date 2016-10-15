@@ -44,6 +44,167 @@
 注意:我们虽然称其为Ubuntu操作系统,但实际上它并不是一个完整的操作系统,它只是一个裁剪版,只包含最低限度的支持系运行的组件,为了区分同一个仓库中的不同镜像,Docker提供了一种被称为标签(tag)的功能,每个镜像在列出时都带有一个标签.我们可以通过仓库名后面加一个冒号和标签名来指定该仓库的某以镜像
 
 	docker run -i -t --name new_container ubuntu:12.04 /bin/bash  ==>运行一个带标签的Docker镜像  
+这个例子会从镜像ubuntu:12.04启动一个容器,而这个镜像的操作系统则是ubuntu12.04.很多镜像具有相同的镜像ID,它们被打了很多标签.比如74fe38d11401的镜像被打上了12.04和precise两个标签,分别代表该Ubuntu发布版本号和代号(code name)
+
+	在构建容器时指定仓库的标签也是一个很好的习惯.这样便可以准确来指定容器来源与哪里.不同的镜像会有不同,比如Ubuntu12.04和14.04j就不一样,指定镜像的标签会上我们确切知道自己使用的是ubuntu:12.04
+
+	Docker Hub中有两种类型的仓库:用户仓库(user repository) 和顶层仓库(top-level repository).用户仓库的镜像都是由Docker用户创建的,而顶层仓库则是由Docker内部的人员来管理的
+	用户仓库的命名由用户名和仓库名两部分组成,如jamtur01/puppet.
+		用户名: jamtur01
+		仓库名: puppet
+	顶层仓库只包含仓库名部分,如ubuntu仓库.顶层仓库由Docker公司和由选定的能提供优质基础镜像的厂商(如Fedora团队提供了fedora镜像)管理.用户可以基于这些基础镜像构建自己的镜像.用户贡献的镜像都是由Docker社区用户提供的,这些镜像并没有经过Docker公司的确认和验证,在使用这些镜像时需要自己承担相应的风险.
+
+
+
+3.拉取镜像
+	
+	用docker run 命令从镜像像启动一个容器,如果镜像不再本地,Docker会先从Docker Hub下载该镜像.如果么既有指定具体的镜像标签.那么
+Docker 会自动下载latest标签的镜像
+	docker run -t -i --name next_containor ubuntu /bin/bash    ==>docker run和默认的latest标签
+
+	
+	通过docker pull 命令自己预先拉取镜像到本地 使用docker pull命令可以节省从一个镜像启动一个容器所需要的时间.
+	
+	docker pull fedora          ===>拉取fedora镜像
+
+	docker images fedora        ===>查看fedora镜像
+	
+	docker pull fedora:20       ===>拉取带标签的fedora镜像
+
+
+4.查找镜像
+	docker search puppet       ===>查找镜像
+	也可以在Docker Hub网站上在线查找可用镜像   上面的命令在Docker Hub上查找所有的puppet的镜像.这条命令会完成镜像的查找的工作,并返回如下信息:
+	仓库名
+	镜像描述
+	用户评价(Stars) ----反应出一个镜像的受欢迎程度
+	是否官方(Official) ----由上游开发者管理的镜像(如fedora镜像由Fedora团队管理)
+	自动构建(Autonated)----表示这个镜像是由Docker Hub的自动构建爱呢(Automated Build)流程创建的
+	
+
+	docker pull macadmins/puppetmaster   ===>拉取macadmins/puppetmaster 镜像 这条命令将下载macadmins/puppetmaster镜像到本地(这个镜像预装了Puppet master).
+
+	docker run -i -t  macadmins/puppetmaster  /bin/bash    ===>从Puppet master镜像创建一个容器
+
+我们以交互式的方式启动了该容器,并且在运行了Rash shell.在进入容器shell之后,我们运行了Facter(Puppet的主机探测应用).它也是预定义安装在镜像之内的.最后,在容器中运行puppet程序以验证Puppet是否安装正常,它也是在预安装在镜像之内的.
+
+
+
+5.构建镜像
+	构建Docker镜像有以下两种方法
+		1.使用docker commit 命令
+		2.docker build命令和Dockerfile文件
+
+并不推荐使用docker commit命令,而使用更灵活,更强大的Dockerfile来构建Docker镜像:一般来说我们不是真正创建新镜像,而是基于一个已有的基础镜像,如ubuntu和fedora等,构建镜像而已.
+
+	5.1创建Docker Hub帐号
+		构建镜像中很重要的一环就是如何共享和发布镜像,可以将镜像推送到Docker Hub或者用户自己私有的Registry中
+		docker login      ===>登录到Docker Hub
+	注意:个人认证信息将会保存到$HOME/.dockercfg文件中
+
+	5.2用Docker的commit命令创建镜像
+		创建Docker镜像的第一种方法是使用docker commit命令,类似往版本控制系统里提交变更,我们先创建一个容器,并在容器里做出修改,就像修改代码一样,最后再将修改提交为一个新镜像
+		docker rubn -i -t ubuntu /bin/bash     ===>创建一个要进行修改的定制容器
+		接下来,在容器中安装Apache
+		
+		apt-get -yq update
+		apt-get -y install apache2       ====>安装apache软件包
+
+	我们启动了一个容器,并在里面安装了Apache,这将作为一个Web服务器来运行,所以把当前状态保存下来,完成此项工程,需要首先exit命令从容器中退出,之后在运行docker commit命令.
+		
+		docker commit 4aab3ce3cb75  rnjack/apche2   ====>提交定制容器
+	docker commit命令中,指定了要提交的修改过的容器的ID(可以通过docker ps -l -q命令来得到刚创建的容器ID),以及一个目标镜像仓库和镜像名,这里是rnjack/apache2.需要注意的是,docker commit提交的只是创建容器的镜像与容器当前状态之间有差异的部分,这使得该跟新非常轻量.
+
+		docker commit -m="A new custom image" --author=="rnjack" 4aab3ce3cb75  rnjack/apche2:webserver   ====>提交定制容器 带有详细信息.
+	这条命令里,我们指定了更多信息选项,首先 -m :用来指定新创建的镜像的提交信息 --author选项,用来列出该镜像的作者信息 接着指定了要提交的容器的ID,最后的rnjack/apache2指定了镜像的用户名和仓库名,并为该镜像增加了一个webserver 标签
+	
+	
+	5.4使用Dockerfile构建镜像
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
