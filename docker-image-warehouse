@@ -119,7 +119,280 @@ Docker 会自动下载latest标签的镜像
 	这条命令里,我们指定了更多信息选项,首先 -m :用来指定新创建的镜像的提交信息 --author选项,用来列出该镜像的作者信息 接着指定了要提交的容器的ID,最后的rnjack/apache2指定了镜像的用户名和仓库名,并为该镜像增加了一个webserver 标签
 	
 	
-	5.4使用Dockerfile构建镜像
+	5.3使用Dockerfile构建镜像
+		推荐使用被称为Dockerfile的定义文件和docker build 命令来构建镜像.Dockerfile使用基本的基于DSL语法的指令来构建Docker镜像,之后使用docker build命令基于该Dokerfile中的指令来构建一个新的镜像.
+	
+		第一个Dockerfile
+		创建一个目录并在里面创建初始的Dockerfile.创建一个简单Web服务器的Docker镜像.创建一个示例仓库
+			make static_web 
+			cd static_web
+			touch Dockerfile
+		我们创建了一个名为static_web的目录来保存Dockerfile,这个目录就是构建环境(build environment),Docker则称此环境为上下文(context)或者构建上下文(build context) Docker会在构建镜像时将构建上下文和该上下文中的文件和目录上传到Docker守护进程.这样Docker守护进程就能直接访问你想在在镜像中存储的任何代码,文件或者其它数据
+
+		第一个Dockerfile:
+		#Version:0.0.1
+		From ubuntu:14.04
+		MAINTAINER Rnjack "rnjack998@gmail.com"
+		RUN apt-get update
+		RUN apt-get install -y nginx
+		RUN  echo 'Hi,I am in your container' > /user/share/nginx/html/index.html
+		EXPOSE 80
+	该Dockerfile 由一系列指令和参数组成.每条指令名,如From,都必须为大写字母且后面需要跟一个参数:FROM ubuntu14.04.Dockerfile中的指令会按顺序从上到下执行,所以应该根据需要合理安排指令的顺序.每条指令都会创建一个新的镜像层对镜像进行提交.Docker大体上按照如写流程执行Dockerfile中的指令.
+		
+		Dockerfile从基础镜像运行一个容器
+		执行一条指令,对容器做出修改
+		执行类似docker commit的操作,提交一个新的镜像层
+		Docker再基于刚提交的镜像运行一个新容器
+		执行Dockerfile中的下一条指令,直到所有指令都执行完毕
+
+	从上面可以看出,如果Dockerfile由于某些原因(如耨条指令失败了)没有正常结束,那么将得到一个可以使用的镜像.这对调试非常有帮助:可以基于该镜像运行一个具有交互功能的容器,使用最后创建的镜像对为什么你的指令失败进行调试 Dockerfile也支持注释,以#开头的行都会被认为是注释.
+	
+	每个Dockerfile的第一条指令都应该是FROM.FROM指令指定了一个已经存在的镜像,后续指令将基于该镜像进行.这个镜像被称为基础镜像(base image) 在Dockerfile示例中,我们指定了ubuntu:14.04作为镜像的基础镜像.基于这个Dockerfile构建的新镜像将以Ubuntu14.04作为操作系统为基础.在运行一个容器时,必须要指明是基于那个基础惊镜像进行构建
+
+	接着指定了MAINTAINER指令,这条指令告诉Docker该镜像的作者是谁,以及作者的电子邮件地址,这有助于标识镜像的所有者和联系方式
+
+	在这些指令之后,指定了三条RUN指令.RUN指令会在当前镜像中运行指定的命令,在这个例子中,我们通过RUN指令更新了已经安装APT仓库,安装了nginx包.之后创建了/usr/share/nginx/html/index.html文件,该文件中有一些简单的文本示例文本.每条RUN指令都会创建一个新的镜像层,如果该指令执行成功,就会将此镜像提交,之后继续执行Dockerfile中的下一条指令
+	默认情况下,RUN指令会在shell里使用命令包装器/bin/sh -c 来执行 如果在一个不支持shell的平台上运行或者不希望在shell中运行(比如避免shell字符串篡改),也可以使用exec格式的RUN指令
+	RUN {"apt-get","install","-y","nginx"}          ===>exec格式的RUN指令
+	这种方式中,我们使用了一个数组来指定要运行的命令和传递给该命令的每个参数
+	
+	设置EXPOSE指令,这条指令告诉Docker 该容器内的应用程序将会使用容器的指定端口,这并不意味着可以自动访问任意容器运行中的服务端口,出入安全原因,Docker并不会自动打开端口名,而是在使用docker run 运行容器时来指定要打开哪些端口,可以指定多个EXPOSE指令来向外部公开多个端口
+
+
+	5.4 基于Dockerfile构建新镜像
+
+		执行docker build命令时,Dockerfile中的所有指令都会被执行并且提交,并且在该命令成功结束后返回一个新镜像.运行Dockerfile
+	
+		cd static_web
+		docker build -t="rnjack/static_web" ,
+
+		使用docker build命令来构建新镜像,-t选项为新镜像设置了仓库和名称,也可以该构建镜像的过程中设置一个标签,其使用方法为"镜像名:标签"
+		docker buil -t="rnjack/static_web:version01"  ===>在构建时为镜像设置标签
+	提示:如果没有制定任何标签,Docker将会自动为镜像设置一个latest标签
+
+	上面命令最后的.告诉Docker到本地目录中去找Dockerfile文件.也可以指定一个Git仓库的源地址来指定Dockerfile的位置
+	
+	docker build -t="rnjack/static_web:version01" git@github.com:rnjack/docker-static_web
+	这里Docker假设在这个Git仓库的根目录下存在Dockerfile文件 将构建上下文上传到Docker守护进程
+	Sending build context to Docker daemon 2.048 kB    如果在构建上下文的根目录下存在以.dockerignore命令的文件的话,该文件内容会按
+行进行分割,每一行都是一条文件爱呢过滤匹配模式.这非常像.gitignore文件爱呢,该文件用来设置哪些文件不会被上到构建上下文中去,该文件中模式的匹配规范采用了Go语言中的filepath.
+	
+	之后,可以看到Dockerfile中的每条指令会被顺序执行,而且作为构建过程的最终结果,返回了新的镜像的ID,构建的每一步及其对应指令都会独立运行,并且在输出最终镜像ID之前,Docker会提交每一步的构建结果
+
+	5.5指令失败时怎样 
+		管理失败的指令,用docker run命令来基于这次构建的目前为止已经成功的最后一步创建的一个容器
+		基于最后的成功步骤创建新容器
+		再到这个容器中运行出错位置的指令,修改正确的指令
+		退出容器,修改Dockerfile文件,之后在尝试进行构建
+	
+	5.6 Dockerfile 和构建缓存
+		由于每一步构建过程都会将结果提交为镜像,所以Docker的构建镜像过程就非常聪明.它会将之气拿的镜像看作缓存
+		docker build --no-cache -t="rnjack01/static_web:version01" . ===>忽略Dockerfile的构建缓存
+
+	
+	5.7 基于构建缓存的Dockerfile模板
+		构建缓存带来的一个好处就是,可以实现简单的Dockerfile模板(比如在Dockerfile文件顶部增加包仓库或者更新包,从而尽可能确保缓存命中).一般都会在自己的Dockerfile文件顶部使用相同的指令集模板,比如对Ubuntu
+		Ubuntu系统的Dockerfile模板
+	
+
+		FROM ubuntu:14.04
+		MAINTAINER RNjack  "rnjack998@gmail.com"
+		ENV REFRESHED_AT 2016-10-16
+		RUN apt-get -qq update
+		
+		首先通过FROM指令为新镜像设置了一个基础镜像ubuntu:14.04,接着使用MAINTAINER指令添加自己的详细联系信息,使用ENV来设置环境变量.我们通过ENV指令来设置了一个名为REFRESHED_AT的环境变量,用来表明该镜像模板最后的更新时间.最后使用RUN 指令运行 apt-get -qq update命令.该指令时将会刷新APT包的缓存,用来确保我们能将要安装的每个软件包都更新到最新版本
+		
+		Fedora Dockerfile模板
+		
+		FROM fedora:20
+		MAINTAINER RNjack 'rnjack998@gmail.com'
+		ENV REFRESHED_AT 2016-10-16
+		RUN yum -y -q upgrade
+	
+	5.8 查看新镜像
+		
+		docker images rnjack/static_web     ===>列出新的Docker镜像
+		
+		深入探求镜像是如何构建出来的,可以使用docker history命令
+		docker history 22d47c8cb6e5         ===>使用docker history命令
+		
+		从返回的结果可以看到新构建的rnjack/static_web镜像的每一层,以及创建这些层的Dockerfile指令
+
+	5.9从新镜像启动容器
+		
+		基于新构建的镜像启动一个新容器,来检查以下我们的构建工作是否一切正常
+	
+		docker run -d -p 80 --name static_web rnjack/static_web:version01 nginx -g "daemon off;"
+	
+	-d告诉Docker以分离(detached)的方式在后台运行.这种方式非常适合运行类似Nginx守护进程这样需要长时间运行的进程.我们需要在容器中运行的命令:nginx -g "daemon off;" 这将以前台运行的方式启动Nginx来作为我们的Web服务器
+	-p 标志,该标志来控制Docker在运行时应该公开哪些网络端口给外部(宿主机). 运行一个容器时,Docker可以通过两种方法来在宿主机上分配端口.
+	
+	Docker可以在宿主机上随机选择一个位于49153~65535的一个比较大的端口号来映射到容器中的80端口上.
+	
+	可以在Docker宿主机中指定一个具体端口号来映射到容器中的80端口上.这将在Docker宿主机上随机打开一个端口,这个端口会连接到容器的80端口上.使用docker ps 命令来查看容器的端口分配情况				
+
+	docker ps -l         ===>查看Docker端口映射情况
+	可以看到,容器中的80端口被映射到宿主机的49154上,也可以通过docker port来查看容器的端口映射情况
+
+	docker port 675b84bb50c0 80  ===>docker port命令
+	指定了想要查看映射情况的容器ID和容器的端口号,这里是80.该命令返回了宿主机中映射的端口 即49154 -p选项可以指定将容器中的端口映射到Docker宿主机的某一特定端口上
+
+	docker run -d -p 80:80  --name static_web rnjack/static_web:version01 nginx -g "daemon off;"  ===>通过-p选项映射到的特定端口
+
+
+	docker run -d -p 8080:80  --name static_web rnjack/static_web:version01 nginx -g "daemon off;"  ===>通过-p选项映射到的特定端口
+	绑定到特定的网络接口
+	docker run -d -p 127.0.0.1:80:80 --name static_web rnjack/static_web:version01 nginx -g "daemon off;"	
+
+	绑定到特定的网络接口的随机端口
+	docker run -d -p 127.0.0.1::80  --name static_web rnjack/static_web:version01 nginx -g "daemon off;"
+	上面指令没有指定具体要绑定的宿主机上的端口号,只指定了以个IP地址127.0.0.1,这时我们可以使用docker inspect或者 docker port命令来查看容器内的80端口具体被绑定到了宿主机上的哪个端口上.
+
+
+	Docker 还提供了一个简单的方式,即 -P参数,该参数可以用来对外公开在Dockerfile中的EXPOSE指令中设置的所有端口
+
+	docker run -d -P  --name static_web rnjack/static_web:version01 nginx -g "daemon off;" 该命令将容器内的80端口对本地宿主机公开,并且绑定到宿主机的一个随机端口上.该命令将用来构建该镜像的Dockerfile文件中的EXPOSE指令指定的其它端口也一并公开.  
+
+	5.10 Dockerfile指令
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
