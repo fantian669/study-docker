@@ -254,6 +254,61 @@ Docker 会自动下载latest标签的镜像
 	docker run -d -P  --name static_web rnjack/static_web:version01 nginx -g "daemon off;" 该命令将容器内的80端口对本地宿主机公开,并且绑定到宿主机的一个随机端口上.该命令将用来构建该镜像的Dockerfile文件中的EXPOSE指令指定的其它端口也一并公开.  
 
 	5.10 Dockerfile指令
+		Dockerfile中可以使用的指令,如RUN和EXPOSE.实际上Dockerfile中放入很多其它指令,这些指令包括CMD,ENTRYPOINT,ADD,COPY,VOLUME,WORKDIR,USER,ONBUILD和ENV等.
+		a.CMD
+	CMD指令用于指定了一个容器启动时要运行的命令.这有点儿类似于RUN指令,只是RUN指令是指定镜像被构建时要运行的命令,而CMD是指定容器被启动时要运行的命令.这和使用docker run命令启动容器时指定要运行的命令非常类似
+	
+	docker run -i -t rnajck/static_web /bin/true    ====>指定运行的特定命令
+	在Dockerfile中使用代码 CMD指令是等效的
+	CMD["/bin/true"]     ===>使用CMD指令
+	当然也可以为要运行的命令指定参数
+	
+	CMD ["/bin/bash","-l"]              ===>给CMD指令传递参数   这里我们将-l标志传递给了/bin/bash命令
+
+	要运行的命令是存放在一个数组结构中的.这将告诉Docker按指定的原样来运行该命令.当然也可以不使用数组样指定CMD命令.这时Docker会在指定的命令加上/bin/sh -c.这在执行该命令的时候可能会导致意料之外的行为.所以Docker推荐一直使用以数组语法来设置要执行的命令.
+	
+	使用docker run 命令可以覆盖CMD指令.要在Dockerfile里指定了CMD指令.同时要在docker run命令中也指定了要运行的命令,命令行中指定的命令会覆盖Dockerfile中的CMD指令  ---深刻理解CMD和ENTERPOINT之间的相互作用关系也非常重要.
+
+	CMD ["/bin/bash"]     ===>覆盖Dockerfile文件中的CMD指令
+	
+	docker run -t -i  rnjack/test       ===>构建新的镜像 ,开始运行 会直接启动bash (CMD命令)  
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
