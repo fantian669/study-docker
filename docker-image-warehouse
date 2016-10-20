@@ -378,6 +378,236 @@ Docker 会自动下载latest标签的镜像
 
 
 
+	ADD
+	ADD指令用来将构成环境下的文件和目录复制到镜像中.比如,在安装一个应用程序时.ADD指令需要源文件位置和目的文件位置两个参数
+	
+	ADD softeare.lic  /opt/application/software.lic  ===>使用ADD指令
+	这里的ADD指令将会构建目录下的software.lic文件复制到镜像中的/opt/application/software.lic.指向源文件的位置参数可以是一个URL.或者构建上下文或环境中文件名或者目录.不能对构建目录或者上下文之外的文件进行ADD操作. 在ADD文件时,Docker通过目的地址参数末尾的字符开判断文件源是目录还是文件.如果目标地址以/结尾,那么Docker默认源位置指向的是一个目录.如果目的地址不是以/结尾,那么Docker就认为源位置指向的是文件. 文件源也可以是使用URL的格式
+	
+	ADD http://wordpress.org/latest.zip  /root/wordpress.zip  ===>在ADD指令使用URL作为文件源
+ADD在处理本地归档文件(tar archive)时,如果将一个归档文件(合法的归档文件包括gzip,bzip2,xz)指定为源文件,Docker会自动将归档文件解开unpack
+
+	ADD latest.tar.gz  /var/www/wordpress/  ===>将归档文件作为ADD指令中的源文件
+
+	这条命令将归档文件latest.tar.gz解开到/var/www/wordpress/目录下 Docker解开归档文件的行为和使用带-x选项的tar命令一样:该指令执行后的输出是原目录的目录已经存在的内容加上归档文件中的内容,如果目的位置的目录霞已经存在了和归档文件同名的文件或目录,那么目的位置中的文件或者目录不会被覆盖.
+
+
+
+	COPY
+	COPY指令非常类似ADD 它们根本的不同是COPY只关心在构建上下文中复制本地文件,而不会去做文件提取(extraction)和解压 (decompressoin)的工作.COPY指令的使用
+	
+	COPY  conf.d/  /etc/apache2/  ===>使用COPY指令
+
+	这条指令将会把本地conf.d目录中的文件复制到 /etc/apache2/目录中  文件源路径必须是一个与当前构建环境相对的文件或目录,本地文件都放到和Dockerfile同一个目录下.不能复制该目录之外的任何文件,因为构建环境将会上传到Docker守护进程,而复制是在Docker守进程中进行的,任何位于构建环境之外的东西都不可用的.COP指令的目的位置则必须是容器内部的绝对路径.
+	任何由该指令创建的文件或者目录的UID和GID都会设置为0
+
+
+	ONBUILD
+	ONBUILD指令能为镜像添加触发器(trigger).当一个镜像被用做其它镜像的基础镜像时(比如镜像需要从某未准备号的位置添加源代码或者你需要执行特定于构建镜像的环境的构建脚本),该镜像中的触发器将会被执行.
+	触发器会在构建过程中插入新指令,我们可以认为这些指令是紧跟在FROM之后指定的.触发器可以是任何构建指令
+
+	ONBUILD  ADD . /app/src
+	ONBUILD  RUN  cd /app/src && make   ===>添加ONBUILD指令
+	上面的代码将会在创建的镜像加入ONBUILD触发器,ONBUILD指令可以在镜像上运行docker inspect 命令来查看
+
+
+	我们为Apache2镜像构建一个全新的Dockerfile,该镜像名为rnjack/apache2     ===>新的ONBUILD镜像Dockerfile
+
+	FROM ubuntu:14.04
+	MAINTAINER rnjack "rnjack998@gmail.com"
+	RUN apt-get update
+	RUN apt-get install -y apache2
+	ENV APACHE_RUN_USER www-data
+	ENV APACHE_RUN_GROUP www-data
+	ENV APACHE_LOG_DIR  /var/log/apache2
+	ONBUILD ADD . /var/www/
+	EXPOSE 80
+	ENTRYPINT ["/usr/bin/apache2"]
+	CMD ["-D","FOREGROUND"]		===>构建apache2镜像
+在新构建的镜像中包含一条ONBUILD指令,该指令会使用ADD指令将构建环境所在的目录下内容全部添加到镜像中的/var/www/目录下.我们可以轻易地将这个Dockerfile作为一个通用的Web应用程序的模板,可以基于这个模板来构建Web应用程序.我们可以通过构建一个名为webapp的镜像来看看如何使用镜像模板够能,它的Dockefile.  webapp的Dockerfile
+
+	FROM rnjack/apache2
+	MAINTAINER rnjack "rnjack998@gmail.com"
+	ENV APPLICATION_NAME webapp
+	ENV ENVIRONMENT development
+	
+	ONBUILD触发器会按照在父镜像中指定的顺序执行,并且只能被继承一次(只能在子镜像中执行,而不会在孙子镜像中执行) 有几条指令是不能在ONBUILD指令中的,包括FROM ,MAINTAINER和ONBUILD本身.以防止在Dockerdile构建过程中产生递归调用.
+
+
+
+
+	6.将镜像推送到Docker Hub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
