@@ -1,0 +1,57 @@
+	在测试中使用Docker
+	
+	 在实际开发和测试过程中使用Docker.首先看看Docker如何使用开发和测试更加流程化,效率更高.
+	
+		使用Docker测试一个静态网站
+		使用Docker创建并测试一个Web应用
+		将Docker用于持续集成
+	
+	1.使用Docker测试静态网站
+将Docker作为本地开发环境是使用Docker的一个最简单的场景.这个环境可以完全重现生产环境,保证开发环境和部署环境一致.下面将Nginx安装到容器来架构yiuge简单的网站开始.这个网站暂时命名为Sample.
+	
+	mkdir sample             
+	cd sample
+	touch Dockerfile  ===>为Nginx Dockerfile创建一个目录
+现在还需要一些Nginx配置文件,才能运行这个网站,首先在这个示例所在的目录里创建以个名为nginx的目录,用来存放配置文件,如后可以下载示例文件.
+	cd sample
+	mkdir nginx && cd nginx
+	wget 	https://raw.githubusercontent.com/jamtur01/dockerbook-code/master/code/5/sample/nginx/global.conf
+	wget 	https://raw.githubusercontent.com/jamtur01/dockerbook-code/master/code/5/sample/nginx/nginx.conf
+	cd ..
+
+	
+	FROM ubuntu
+	MAINTAINER rnjack "rnjack998@gmail.com"
+	ENV REFRESHED_AT  2016-10-22
+	RUN apt-get update
+	RUN apt-get -y -q install nginx
+	RUN mkdir -p /var/www/html
+	ADD nginx/global.conf     /etc/nginx/conf.d/
+	ADD nginx/nginx.conf     /etc/nginx/nginx.conf
+	EXPOSE 80                                                  ====>网站测试的基本Dockerfile
+
+	Dockerfile内容包括以下几项:
+		安装Nginx
+		在容器中创建一个目录/var/www/html
+		将来自我们下载的本地文件的Nginx配置文件添加到镜像中.
+		公开镜像的80端口
+
+	这个Nginx配置文件是为了运行Sample网站而配置的.将文件nginx/global.conf用ADD指令复制到/etc/nginx/conf.d目录中.
+	这个文件将Nginx设置为监听80端口,并将网络服务的根路径设置为/var/www/html/website 这个目录是我们用RUN指令创建的.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
