@@ -38,6 +38,199 @@
 
 	这个Nginx配置文件是为了运行Sample网站而配置的.将文件nginx/global.conf用ADD指令复制到/etc/nginx/conf.d目录中.
 	这个文件将Nginx设置为监听80端口,并将网络服务的根路径设置为/var/www/html/website 这个目录是我们用RUN指令创建的.
+	需要将Nginx配置为非守护进程的模式.这样可以让Nginx在Docker容器里工作,将文件nginx/nginx.conf 复制到/etc/nginx目录就可以达到这个目的在nginx.conf中设置daemon off;选项阻止Nginx进入后台,强制其在前台运行.这是因为要想保持Docker容器的活跃状态,需要其中运行的进程不能中断.默认情况下,Nginx会以守护进程的方式启动,这会导致容器只是短暂运行,在守护进程被fork启动后,发起守护进程的原始进程就会退出,这时容器就会停止运行
+
+	
+	构建Sample网站和Nginx镜像
+	
+	利用之前的Dockerfile,可以用docker build命令构建出新的镜像,并将这个镜像为rnjack/nginx
+		docker build -t rnjack/nginx	 ===>构建新的Nginx镜像
+
+	使用docker histroy 命令查看构建镜像的步骤和层级
+		docker histroy rnjack/nginx      ===>展示Nginx镜像的构建历史
+history命令从新构建的rnjack/nginx镜像的最后一层开始,追溯到最开始的父镜像ubuntu:14.04.这个命令也展示了每步之间创建的新层,以及创建这个层所使用的Dockerfile里的指令.
+
+
+	从Sample网站和Nginx镜像构建容器
+	
+现在可以使用rnjack/nginx镜像,并开始从这个镜像构建可以用来测试Sample网站的容器.首先,需要一个被测试的Sample网站.下载一些代码来创建网站
+	cd sample             ===>下载Sample网站
+	mkdir website && cd website
+	wget https://raw.githubusercontent.com/jamtur01/docker-code/master/code/5/sample/website/index.html
+	cd ..	
+
+
+	构建第一个Nginx测试容器
+		docker run -d -p 80 --name website -v $PWD/website:/var/www/html/website rnjack/nginx nginx
+我们使用docker run命令从rnjack/nginx镜像创建了一个名为website的容器. -v这个选项允许我们将宿主机的目录作为卷,挂载到容器里. 卷在Docker里非常中重要,也很有用. 卷是在一个或多个容器内被选定的目录.可以绕过分层的联合文件系统(Union File System),为Docker提供持久数据或者共享数据.这意味着对卷的修改会直接生效,并绕过镜像.当提交或者创建镜像时,卷不被包含在镜像里. 卷可以在容器间共享.即便容器停止,卷的内容依旧存在.当我们因为某些原因不想把应用或者代码构建到镜像中时.就体现卷的价值了.
+		
+	希望同时对代码做开发和测试
+	代码改动很频繁,不想在开发过程中重构镜像
+	希望在多个容器间共享代码
+  参数 -v指定了卷的源目录(本地宿主机的目录)和容器里的目的目录,这两个目录通过:来分离.如果目的目录不存在,Docker会自动创建一个,也可以通过在目录后面加上 rw 或者 ro 来指定目的的目录的读写状态
+
+	docker run -d -p 80 --name website -v $PWD/website:/var/www/html/website:ro rnjack/nginx nginx
+  这将使目的的目录/var/www/html/website变成只读状态.在Nginx网站的容器里,我们通过卷将$PWD/website 挂载到容器的/var/www/html/website目录,顺利挂载了正在开发的本地网站.在Nginx配置里(在配置文件/etc/nginx/conf.d/global.conf中)已经指定了这个目录为Nginx服务器的工作目录.
+	docker ps -l  ===>查看Sample网站容器
+  如果在Docker 的宿主机上浏览器32768端口, 直接在浏览器中输入 http://localhost:32769就会看见网站页面
+	
+	修改网站
+  修改网站,直接打开本地宿主机的website目录霞的index.html文件并修改,修改完成,再次访问该链接,网站的内容修改完成.更改复杂的修改也并不困难,更重要的是,正在测试网站的运行环境,完全是生产环境的真实状态.现在可以给每个用于生产的网站服务环境(如 Apache Nginx)配置一个容器,给不同开发框架的运行环境(如 PHP 或者 Ruby on Rails)配置一个容器,或者给后端数据库配置一个容器,等等.
+
+
+
+	2.使用Docker构建并测试web应用程序
+
+  测试一个更大的Web应用程序.测试一个基于Sinatra的Web应用程序,而不是静态网站.下面的例子会演示如何在Docker里开发并测试应用程序.这个应用程序会接收输入参数,并使用JSON散列输出这些参数.
+	
+	2.1构建Sinatra应用程序
+   构建基础镜像,并用这个镜像来开发Sinatra Web应用,测试用Web应用程序的Dockerfile
+	FROM ubuntu
+	MAINTAINER rnjack "rnjack998@gmail.com"
+	ENV REFRESHED_AT 2016-10-23
+
+	RUN apt-get update
+	RUN apt-get -y install ruby ruby-dev build-essential redis-tools
+	RUN gem install --no-rdoc --no-ri sinatra json redis
+	
+	RUN mkdir -p /opt/webapp
+	
+	EXPOSE 4567
+	
+	CMD ["/opt/webapp/bin/webapp"]	
+
+    我们创建另一个基于Ubuntu的镜像,安装Ruby 和RubyGem,并且使用gem命令安装sinatra json 和 redis包,然后还创建一个目录来存放新的Web应用程序并公开可WEBrick的默认端口4567
+   最后,使用 CMD指定/opt/webapp/bin/webapp作为Web应用程序的启动文件    
+
+	docker build -t rnjack/sinatra     ===>构建新的Sinatra镜像
+
+	2.2创建Sinatra容器
+	
+   下载Sinatra Web应用程序的源代码,这应用程序在webapp目录下,由bin和lib两个目录组成
+
+	wget --cut-dirs=3 -nH -r --no-parent http://dockerbook.com/code/5/sinatra/webapp/
+
+	ls -l webapp
+   使用chmod 命令保证webapp/bin/webapp文件可以执行
+	chmod +x $PWD/webapp/bin/webapp                 ===>确保webapp/bin/webapp可以执行	
+
+	
+	启动第一Sinatra容器
+
+	docker run -d -p 4657 --name webapp -v $PWD/webapp:/opt/webapp rnjack/sinatra
+    这里从rnjack/sinatra镜像创建一个新的名为webapp的容器.指定一个新卷$PWD/webapp,来存放新的Sinatra Web应用程序,并将这个卷挂载到Dockfile里创建的目录/opt/webapp. 我们没有在命令行中提供要运行的命令,而是在镜像的Dockfile里的CMD指令中提供这一命令
+
+	docker logs webapp           	===>检查Sinatra的日志
+   运行docker logs 命令时加上-f 标志可以达到与执行tail -f 命令一样的效果  持续输出容器的STDERR和 STDOUT里的内容.
+	docker logs -f webapp           ===>跟踪Sinatra容器的日志
+	
+	docker top webapp               ===>使用docker top 来列出Sinatra进程
+
+	docker port webapp              ===>检查Sinatra的端口映射
+
+   目前,Sinatra应用还很基础,它只是接收输入参数,并将输入参数转化为JSON输出,下载可以使用curl命令开测试这个应用程序 测试Sinatra应用程序
+	curl -i -H 'Accept: application/json' -d 'name=RNjack&status=Bar' http://localhost:32771 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
