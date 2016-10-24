@@ -131,6 +131,105 @@ history命令从新构建的rnjack/nginx镜像的最后一层开始,追溯到最
    目前,Sinatra应用还很基础,它只是接收输入参数,并将输入参数转化为JSON输出,下载可以使用curl命令开测试这个应用程序 测试Sinatra应用程序
 	curl -i -H 'Accept: application/json' -d 'name=RNjack&status=Bar' http://localhost:32771 
 
+	
+	构建Redis镜像和容器
+
+    我们将要扩展Sinatra应用程序,加入Redis后端数据库,并在Redis数据中存储输入的参数.为了达到这个目的,要构建全新的镜像和容器来运行Redis数据库.之后,要利用Docker的特性来关联两个容器.
+   
+    为了构建Redis数据库,要创建一个新的镜像.从一个新的Dockerfile开始,逐步让Redis运行在Docker里.用于Redis镜像的Dockerfile
+
+	FROM ubuntu:14.04
+	MAINTAINNER rnjack 'rnjack998@gmail.com'
+	ENV REFRESHED_AT 2016-10-24
+	RUN apt-get update
+	RUN apt-get -y install redis-server redis-tools
+	EXPOSE 6379
+	ENTRYPOINT ["/usr/bin/redis-server"]
+	CMD []	
+       
+     我们在Dockerfile里指定了安装Redis服务器,公开6379端口,并指定了启动Redis服务器的ENTRYPOINT.现在来构建这个镜像,命名为rnjack/redis
+	docker build -t rnjack/redis .    ===>构建Redis镜像
+
+	docker run -d -p 6379 --name redis rnjack/redis     ===>启动Redis容器
+  可以看到,我们从rnjack/redis镜像启动了一个新的容器,名字是redis.注意.我们指定了-p标志来公开6379端口,看看映射到宿主机的哪个端口.
+	docker port redis 6379           ===>查看端口
+
+  我们需要在本地安装Redis客户端做测试,客户端程序一般在redis-tools包里
+	
+	apt-get -y install redis-tools          ===>在Ubuntu上安装redis-tools包
+
+	redis-cli -h 127.0.0.1 -p 49361         ===>测试连接到Redis服务器
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
