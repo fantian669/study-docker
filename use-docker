@@ -306,6 +306,91 @@ DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:32768 to:1
 	也可以在docker run 命令中加入--dns或者--dns-search标志来为某个容器单独配置DNS,可以设置本地DNS解析的路仅和搜索路线.如果没有这两个标志,Docker会根据宿主机的信息来配置DNS解析.可以在/etc/resolv.conf文件中查看DNS解析的配置情况.
 	
 	redis =  Redis.new(:host =>'db', :port=>'6379')	    ===>使用主机名连接Redis
+	应用程序会在本地查找叫db的主机,找到/etc/hosts文件里的项并解析到正确的IP地址.这也解决了硬编码IP地址的问题 在容器里启动应用程序,看DNS本地解析能不能工作.
+	
+	nohup /opt/webapp/bin/webapp &          ===>启动支持Redis的Sinatra应用程序
+
+	这里启动了Sinatra应用程序并让其在后台运行.现在在Docker宿主机上再次使用curl命令测试应用程序
+	
+	curl -i -H 'Accept: application/json' -d 'name=Foo&status=Bar' http://localhost:49161/json    ===>测试支持Redis的Sinatra应用程序
+
+	确认Redis实例接收到了这个更新
+	curl -i http://localhost:49161/json         ===>确认Redis存储了相关数据
+	
+	"{'name':'Foo','status':'bar'}"
+现在已经连接到了应用程序(应用程序连接到了Redis),应用程序会检查Redis存储的键,找出一个叫param的键,然后查询这个键来看看我们的两个参数(name=Foo 和 statuus=Bar)已经存入Redis.应用程序工作了!
+
+这个Web应用程序栈由以下几部分组成
+	一个运行Sinatra的Web服务器容器.
+	一个Redis数据库容器.
+	这两个容器间的是一个安全连接
+	
+	可以很容易把这个概念扩展到别的应用程序栈,并用其在本地开发中复杂的管理,比如:
+		Wordpress HTML CSS 和 JavaScript
+		Ruby on Rails
+		Django 和 Flask
+		Node.js
+		Play!
+		你喜欢的其它框架
+	这样就可以在本地环境中构建,复制,迭代开发用于生产的应用程序,甚至很复杂的多层应用程序.
+
+
+	Docker用于持续集成
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+i
+
+
+
+
 
 
 
