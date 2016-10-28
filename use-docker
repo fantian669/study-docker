@@ -291,8 +291,40 @@ DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:32768 to:1
 这些环境变量会随着容器的不同而变化,取决与容器是如何配置的(如容器的Dockerfile里由ENv和EXPOSE指令定义的内容).更重要的是,这些连接信息可以让容器内的应用程序使用相同的方法与别的容器进行连接,而不用关心连接容器的具体细节
 
 	2.7 使用容器连接来通信
+     那么如何使用这个连接呢?给Sinatra应用程序加入一些连接信息,以便与Redis通信,有以下两种方法可以让应用程序连接到Redis.
+	使用环境变量里的一些连接信息.
+	使用DNS和/etc/hosts信息.
+    Web用用程序的lib/app.rb文件是如何利用这些新的环境的变量
+
+	require 'uri'
+		...
+	uri=URI.parse(ENV['DB_PORT'])
+	redis=Redis.new(:host=>uri.host, :port=>uri.port)
+
+    这里使用Ruby的URI模块来解析DB_PORT环境变量,并使用解析后的结果来配置Redis连接.应用程序现在可以使用这个连接信息找到相连的Redis容器.通过环境变量,这里不再需要硬编码的IP地址和端口来进行连接.这是一种发现服务的方法.
+    另一种方法,可以使用本地DNS
+	也可以在docker run 命令中加入--dns或者--dns-search标志来为某个容器单独配置DNS,可以设置本地DNS解析的路仅和搜索路线.如果没有这两个标志,Docker会根据宿主机的信息来配置DNS解析.可以在/etc/resolv.conf文件中查看DNS解析的配置情况.
+	
+	redis =  Redis.new(:host =>'db', :port=>'6379')	    ===>使用主机名连接Redis
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
 
 
 
