@@ -346,6 +346,151 @@ DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:32768 to:1
 
 
 
+	3.1 构建Jenkins和Docker服务器
+
+	为了提供一个Jenkins服务器,从Dockerfile开始构建一个安装了Jenkins和Docker的Ubuntu14.04镜像.  
+Jenkins和Docker服务器的Dockerfile
+	
+	FROM  ubuntu:14.04
+	MAINTAINER rnjack998@gmail.com
+	ENV REFRESHED_AT 2016-11-02
+	RUN apt-get update -qq && apt-get install -qqy curl
+	RUN curl https://get.docker.io/gpg | apt-key add -
+	RUN echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+	RUN apt-get update -qq && apt-get install -qqy iptables cacertificates lxc openjdk-6-jdk git-core lxc-docker
+
+	ENV JENKINS_HOME  /opt/jenkins/data
+	ENV JENKINS_MIRROR htt://mirrors.jenkins-ci.org
+
+
+	RUN mkdir -p $JENKINS_HOME/plugins
+	RUN curl -sf -o /opt/jenkins/jenkins.var -L $JENKINS_MIRROR/warstale/latest/jenkins.war
+	
+	
+	RUN  for plugin in chucknorris greenballs scm-api git-client git ws-cleanup;do curl -sf -o $JENKINS_HOME/plugins/${plugin}.hpi
+-L $JENKINS_MIRROR/plugins/${plugin}/latest/${plugin}.hpi ;done
+
+	ADD ./dockerjenkins.sh /usr/local/bin/dockerjenkins.sh
+	RUN chmod +x /usr/local/bin/dockerjenkins.sh
+
+	VOLUME /var/lib/docker
+	EXPOSE 8080
+	ENTERYPOINT [ "/usr/local/bin/dockerjenkins.sh" ]
+
+可以看到,Dockerfile继承自ubuntu:14.04镜像,子后做了很多事情,这是目前为止见过的最复杂的Dockerfile.
+
+	首先,它设置了Ubuntu环境,加入了需要的Docker APT仓库,并加入了对应的GPG key.之后更新了包列表,并安装执行Docker和Jenkins所需要的包.我们使用与第2章相同的指令.加入了一些Jenkins需要的包.
+
+	然后,我们创建了/opt/jenkins目录,并把最新稳定版的Jenkins下载到这个目录.还需要一些Jenkins插件,给Jenkins提供额外的功能(比如Git版泵控制).
+
+	使用ENV指令把JENKINS_HOME和JENKINS_MIRROR环境变量设置为Jenkins的数据目录和镜像站点
+
+	然后我们指定了VOLUME指令. VOLUME指令从容器运行的宿主机上挂载一个卷.在这里,为了"骗过"Docker,指定/var/lib/docker作为卷.这是因为/var/lib/docker目录是Docker用来储存其容器的目录.这个位置必须是真实的文件系统,而不能是像Docker镜像层那种挂载点.
+
+	那么,我们使用VOLUME指令告诉Docker进程,在容器运行内部使用宿主机的文件系统作为容器的存储.这样,容器内嵌Docker的/var/lib/docker目录将保存在宿主机系统的/var/lib/docker/volumes目录下的某个位置.	
+	我们已经公开了Jenkins默认的8080端口.
+	最后,我们指定了一个要运行的shell脚本作为容器的启动命令.这个shell脚本(由ENTRYPOINT指令指定)帮助在宿主机上配置Docker.允许在Docker里运行Docker.开启了Docker守护进程,并启动Jenkins.
+	
+	docker build -t rnjack/dockerjenkins             ===>构建Docker-Jenkins镜像
+	
+	docker run -p 8080:8080 --name jenkins --privileged -d  rnjack/dockerjenkins
+
+可以看到,这里使用了一个新标志--privileged来运行容器.--privileged标志很特别,可以启动Docker的特权模式,这种模式允许我们以其宿主机具有的(几乎)所有能力来运行容器,包括一些内核特性和设备访问.这是让我们可以在Docker中运行Docker的必要魔法.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
