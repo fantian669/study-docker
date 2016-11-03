@@ -398,6 +398,30 @@ Jenkins和Docker服务器的Dockerfile
 可以看到,这里使用了一个新标志--privileged来运行容器.--privileged标志很特别,可以启动Docker的特权模式,这种模式允许我们以其宿主机具有的(几乎)所有能力来运行容器,包括一些内核特性和设备访问.这是让我们可以在Docker中运行Docker的必要魔法.
 
 
+	让Docker运行在--privileged特权模式会有一些安全风险,在这中模式写运行容器对Docker宿主机拥有root访问权限.确保你已经对Docker宿主机进行了安全保护,并且只在确实可信的域里使用特权访问Docker宿主机,或者仅在有类似信任的情况霞运行容器.
+
+	可以看到,我们使用了-p标志在本地宿主机的8080端口上公开8080端口.一般来说,这不是一种好的做法.不过足以让一台Jenkins服务器运行起来.
+
+	docker logs jenkins           ===>检查Docker Jenkins容器的日志.
+
+	使用-f标志运行docker logs命令,不断地检查日志.看到如下信息,可以确定Jenkins启动和执行
+
+	INFO: Jenkins is fulluy up and running
+
+	
+	3.2 创建新的Jenkiins作业
+
+	
+	3.3 运行Jenkins作业
+
+
+	4.1 创建多配置作业
+
+	4.2 测试多配置作业
+
+	5  其它选择  
+
+
 
 
 
