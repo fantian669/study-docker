@@ -1,0 +1,67 @@
+	使用Docker构建服务
+
+	上一章介绍如何利用Docker来使用容器在本地开发工作流和持续集成环境中方便快捷的进行测试.本章继续探索如何利用Docker来运行生产环境的服务.
+
+	首先会构建一个简单的应用,然后会构建一个更复杂的多容器应用.这些应用会展示,如何利用连接和卷之类的Docker特性来组合并管理运行于Docker中的应用.
+
+	1.构建第一个应用
+
+	要构建的第一个应用是使用Jekyll框架的自定义网站.我们会构建以下两个镜像.
+
+一个镜像安装了Jekyll及其他用于构建Jekyll网站的必要的软件包
+
+一个镜像通过Apache来让Jekyll网站工作起来
+	计划在启动容器时,通过构建一个新的Jekyll网站来事项自服务.工作流程如下:
+
+	创建Jekyll基础镜像和Apache镜像(只需要构建间一次).
+	从Jekyll镜像创建一个容器,这个容器存放通过卷挂载的网站源代码.
+	从Apache镜像创建一个容器,这个容器利用包含编译后的网站的卷,并为其服务.
+	在网站需要更新你时,清理并重复上面的步骤.
+可以把这个例子看做一个多主机站点最简单的方法
+
+	1.1 Jekyll基础镜像
+	
+Jekyll基础镜像的Dockerfile.创建一个新的目录和一个空的Dockerfile.代码如下: 
+
+	mkdir jekyll && cd jekyll && vim Dockerfile            ===>创建Jekyll Dockerfile
+
+	FROM ubuntu
+	MAINTAINER rnjack998@gmail.com
+	ENV REFRESHED_AT 2016-11-03
+
+	RUN apt-get -yqq update
+	RUN apt-get -yqq install ruby ruby-dev make nodejs		
+	RUN gem install --no-rdoc --no-ri jekyll
+	
+	VOLUME /data
+	VOLUME /var/www/html
+	WORKDIR  /data
+	ENTRYPOINT [ "jekyll", "build", "--destination=/var/www/html"]
+这个Dockerfile使用了第3章里的模板作为基础.镜像基于Ubuntu.并且安装了Ruby和支持Jekyll的报.然后我们使用了VOLUME指令创建了以下两个卷.
+	
+	/dat/,用来存放网站的源代码.
+	/var/www/html/ ,用来存放编译后的Jekyll网站码.
+然后我们需要将工作目录设置到/data/,并通过ENTRYPOINT指令指定自动构建的命令,这个命令将会将工作目录/data/中所有的Jekyll网站代码构建到/var/www/html目录中.
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
