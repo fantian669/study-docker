@@ -1,0 +1,103 @@
+该学习笔记 根据 http://www.cnblogs.com/CloudMan6/p/6693772.html 记录自身认为的知识点
+感谢 CloudMan 提供的原创《每天5分钟玩转OpenStack》教程
+
+
+容器技术 
+	容器核心技术
+		what
+		why
+		how
+			架构
+			镜像
+			容器
+			网络
+			存储
+	容器进阶知识
+		multi-host
+		容器网络
+		监控
+		数据管理
+		日志管理
+		安全性
+
+容器平台技术
+	容器编排引擎
+		docker swarm
+		kubernetes
+		mesos+marathon
+	容器管理平台
+		Rancher
+		ContainerShip
+	基于容器的Paas
+		Deis
+		Flynn
+		Dokku
+
+鸟瞰容器生态系统
+	
+	容器生态系统
+		容器核心技术
+			容器规范
+				runtime spec
+				image format spesc
+			容器runtime------->容器真正运行的地方，需要跟操作系统kernel紧密协作，为容器提供环境
+				lxc
+				runc
+				rkt
+			容器管理工具------>管理工具与运行环境一一对应
+				lxd
+				docker engine 
+					deamon
+					cli
+				rkt cli
+
+			容器定义工具
+				docker image --->容器的模板,runtime 依据docker image 创建容器
+				dockerfile   --->文本文件包含若干命令，通过命令创建出docker image
+				ACI(App Container Image) --->和docker image 类似 由CoreOSk开发的rkt容器的image格式
+			Registries
+				Docker Registry
+				Docker Hub
+				Quay.io
+			容器OS ---->容器OS是专门运行容器的操作系统
+				coreos
+				auomic
+				ubuntu core
+
+		容器平台技术
+			容器编排引擎---> 高效的方法来管理容器集群：（编排）容器管理、调度、集群定义和服务发现等
+				docker swarm --->  Docker 开发的容器编排引擎
+				kubernetes   --->  Google领导开发 同时支持 Docker 和 CoreOS容器
+				mesos+marathon --->通用的集群资源调度平台 mesos 与marathon一起提供容器编排引擎功能
+			
+			容器管理平台 ---> 架构
+				Rancher
+				ContainerShip
+			基于容器的Paas
+				Deis
+				Flynn
+				Dokku
+
+		容器支持技术
+			容器网络
+				docker network ---> Docker 原生的网络解决方案
+				flannel
+				weave
+				calico
+			服务发现 ---> 动态变化是微服务应用的一大特点。(保存容器集群中所有微服务最新消息，对外提供API,提供查询服务)
+				etcd
+				consul
+				zooleeper
+			监控--->容器动态特征对监控提出更多挑战
+				docker ps/top/stats --->Docker原始的命令行监控工具
+				docker stats API  --->Docker提供的stats API,用户通过HTTP请求获取容器的状态信息
+				sysdig
+				cAdvisor/Heapster
+				Weave Scope
+			数据管理---> 保证持久化数据也能动态迁移
+				Flocker 
+			日志管理---> 提供问题排查和事件管理依据
+				docker logs ---> Docker 原生的日志管理工具
+				logspout	---> 对日志提供了路由功能，它可以收集不同容器的日志并转发给其它工具进行处理
+			安全性
+				OpenSCAP ---> 对容器镜像进行扫描 发现潜在漏洞
