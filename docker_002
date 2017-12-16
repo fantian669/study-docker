@@ -63,3 +63,64 @@ Docker 采用的是 Client/Server 架构。客户端向服务器发送请求，�
 		1.不依赖其它镜像，从scratch构建
 		2.其它镜像可以以它为基础进行扩展
 	故能称为base镜像的通常都是各种Linux发行版的Docker镜像，比如Ubuntu,Debian,Centos等
+
+		rootfs
+			内核空间是kernel,Linux 刚启动时会加载bootfs文件系统，之后bootfs会被卸载掉
+			用户空间的文件系统是rootfs，包含我们熟悉的/dev,/proc,/bin等目录
+			对于base镜像来说，底层直接使用Host的kernel，自己只需要提供rootfs就行了。
+
+		CentOS镜像的Dockerfile的内容
+			FROM scratch
+			ADD centos-7-docker.tar.xz /
+			CMD ["/bin/bash"]
+
+		支持运行多种Linux OS
+			不同Linux发行版的区别主要就是rootfs.
+				1.base镜像只是在用户空间与发行版一致,kernel版本与发行版是不同的
+				2.容器只能使用Host的kernel,并且不能修改
+
+	镜像的分层结构
+
+		Docker 支持通过扩展现有镜像，创建新的镜像
+		构建新镜像
+			FROM debian
+			RUN apt-get install emacs
+			RUN apt-get install apache2
+			CMD ["/bin/bash"]
+
+			1.新镜像不是重scratch开始，而是直接在Debian base镜像上构建。
+			2.安装emacs编辑器
+			3.安装apache2
+			4.容器启动时运行bash
+		新镜像是从base镜像一层一层叠加生成的。每安装一个软件，就在现有镜像的基础上增加一层
+
+		好处 ----> 共享资源
+
+		可写的容器层（Copy-on-Write特性）
+			容器启动时，一个新的可写层被加载到镜像的顶部，该层通常叫 "容器层"，"容器层"之下都叫"镜像层"
+
+			只有容器层是可写的，容器层下面的所有镜像层都是只读的。
+
+	构建镜像
+		Docker 提供了两种构建镜像的方法：
+			1.docker commit命令（不建议使用）
+				1.运行容器
+				2.修改容器
+				3.将容器保存为新的镜像
+
+			2.Dockerfile 构建文件
+				dockerfile 文件
+				docker build 命令
+				docker history 命令 显示镜像的构建历史
+	镜像的缓存特性
+		Docker会缓存已有镜像的镜像层，构建新镜像时，如果某镜像层已经存在，就直接使用，无需重新创建
+		如果我们希望在构建镜像时不使用缓存，可以在docker build 命令中加上 --no-cache 参数
+		Dockerfile中每一个指令都会创建一个镜像层，上层是依赖于下层的。只要某一层发生变化，其上层所有缓存都会失效
+
+	调试Dockerfile
+		Dockerfile构建镜像的过程：
+			1.从base镜像运行一个容器
+			2.执行一条指令，对容器做修改
+			3.执行类似docker commit的操作，生成一个新的镜像层。
+			4.Docker再基于刚刚提交的镜像运行一个新容器。
+			5.重复2-4步，直到Dockerfile中所有指令执行完毕。
