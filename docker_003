@@ -1,0 +1,21 @@
+该学习笔记 根据 http://www.cnblogs.com/CloudMan6/p/6693772.html 记录自身认为的知识点
+感谢 CloudMan 提供的原创《每天5分钟玩转OpenStack》教程
+
+	如何运容器
+		运行容器
+			docker run 是启动容器的方法,可用三种方式指定容器启动时执行的命令：
+				1.CMD指令
+				2.ENTERYPOINT
+				3.在docker run命令行中指定
+
+			docker ps -a 或 docker container ls 显示所有状态的容器
+
+		让容器长期运行
+			因为容器的生命周期依赖于启动时执行的命令，只要该命令不结束，容器也就不会退出。
+
+				docker run ubuntu /bin/bash -c "while true; do sleep 1; done"
+
+			while语句让bash不会退出,暂用一个终端。
+
+			-d 参数 以后台方式启动容器
+				docker run -d ubuntu /bin/bash -c "while true; do sleep 1; done"
